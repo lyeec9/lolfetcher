@@ -10,17 +10,19 @@ dry_run = True
 
 reddit = praw.Reddit("lolfetcher")
 
-# Fill in the subreddit(s) here.
-subreddit = reddit.subreddit('test')
+subreddit_string = ''
+with open('data/subreddits.txt', 'r') as f:
+    for i in f:
+        subreddit_string += i.replace("\n", "+")
+    subreddit_string = subreddit_string.rstrip("+")
+
+subreddits = reddit.subreddit(subreddit_string)
 
 # This loads the already parsed comments from a backup text file into memory
 already_done = []
-try:
-    with open('lolfetcher_done.txt', 'r') as f:
-        for i in f:
-            already_done.append(i.replace("\n", ""))
-except IOError:
-    print("lolfetcher_done.txt does not exist yet.")
+with open('data/lolfetcher_done.txt', 'r') as f:
+    for i in f:
+        already_done.append(i.replace("\n", ""))
 
 class Item:
   def __init__(self, original_name, name, id, description, cost, image_url, wiki_url):
@@ -46,16 +48,16 @@ with open('data/custom_wiki_links_overrides.json') as json_file:
 
 def format_description(description):
     # Regex match on first pass: First find key indicators to translate to bold reddit format.
-    description = re.sub('<li>', '\n\n', description)
-    description = re.sub('<active>', "**", description)
-    description = re.sub('</active>', "**", description)
-    description = re.sub('<passive>', "**", description)
-    description = re.sub('</passive>', "**", description)
-    description = re.sub('<rarityMythic>', "**", description)
-    description = re.sub('</rarityMythic>', "**", description)
+    description = description.replace('<li>', '\n\n')
+    description = description.replace('<active>', "**")
+    description = description.replace('</active>', "**")
+    description = description.replace('<passive>', "**")
+    description = description.replace('</passive>', "**")
+    description = description.replace('<rarityMythic>', "**")
+    description = description.replace('</rarityMythic>', "**")
     # Next, change all <br> to new lines.
-    description = re.sub("<br><br>", '\n\n', description)
-    description = re.sub("<br>", '\n\n', description)
+    description = description.replace("<br><br>", '\n\n')
+    description = description.replace("<br>", '\n\n')
     # Last, we remove all remaining non <br> tags
     description = re.sub("<[^>]*>", '', description)
     return description
@@ -96,7 +98,7 @@ with open('data/items_cache.json') as json_file:
 
 def bot_comments():
     ids = []
-    sub_comments = subreddit.comments()
+    sub_comments = subreddits.comments()
     for comment in sub_comments:
         ids.append(comment.id)
         # Checks if the post is not actually the bot itself (since the details include square brackets)
@@ -117,7 +119,7 @@ def bot_comments():
 # This function is nearly the same as comment parsing, except it takes submissions (should be combined later)
 def bot_submissions():
     sub_ids = []
-    sub_subs = subreddit.new(limit=5)
+    sub_subs = subreddits.new(limit=5)
     for submission in sub_subs:
         sub_ids.append(submission.id)
         if submission.id not in already_done:
@@ -127,7 +129,7 @@ def bot_submissions():
                     if dry_run:
                         print(reply)
                     else:
-                        submission.add_comment(reply)
+                        submission.reply(reply)
                         already_done.append(submission.id)
                 except Exception as e:
                     print(str(e))
@@ -153,20 +155,18 @@ def construct_reply(string):
             item = items_by_name[requested_name]
             real_item_name = item.name
             if real_item_name not in replied_item_names:
-                reply += "[**%s**](%s) - [wiki](%s)\n\n%s\n\n" % (item.original_name, item.image_url, item.wiki_url, item.description)
-                if index < len(request) -1:
-                    reply += "-----\n\n"
+                reply += "[%s](%s)\n\n%s\n\n" % (item.original_name, item.wiki_url, item.description)
+                reply += "-----\n\n"
                 replied_item_names.append(real_item_name)
     # Can be empty int
     if reply == "":
         return False
     reply += re.sub(' ', ' ^^', " Call this bot with [[Item Name]].\n\n")
-    reply += re.sub(' ', ' ^^^', " Questions or suggestions? Message my owner, u/FlamingJellyfish.")
     return reply
 
 # Function that backs up current parsed comments
 def write_done():
-    with open("lolfetcher_done.txt", "w+") as f:
+    with open("data/lolfetcher_done.txt", "w+") as f:
         for i in already_done:
             f.write(str(i) + '\n')
 

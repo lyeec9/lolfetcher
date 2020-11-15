@@ -8,3 +8,9 @@ The majority of items named by Riot in their Items API can be translated directl
 appending the item's name to the end of the wiki/ url. There are some exceptions (such as "Blade of The Ruined King") 
 that need to be mapped manually. Additional testing is needed to ensure that all existing items will continue to map 
 to their respective wiki links.
+
+## subreddits.txt
+A list of valid subreddits to run the bot separated by newline delimeters. 
+
+## lolfetcher_done.txt
+A list of completed comment and submission IDs where the LoLFetcher bot has already responded.
