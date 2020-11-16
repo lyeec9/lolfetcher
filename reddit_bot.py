@@ -36,7 +36,7 @@ def bot_comments():
     for comment in sub_comments:
         ids.append(comment.id)
         # Checks if the post is not actually the bot itself (since the details include square brackets)
-        if comment.id not in already_done and not str(comment.author) == "lolfetcher":
+        if comment.id not in already_done and comment.id not in new_done and not str(comment.author) == "lolfetcher":
             reply = construct_reply(comment.body, comment.id)
             if reply:
                 try:
@@ -57,7 +57,7 @@ def bot_submissions():
     sub_subs = subreddits.new(limit=5)
     for submission in sub_subs:
         sub_ids.append(submission.id)
-        if submission.id not in already_done:
+        if submission.id not in already_done and submission.id not in new_done:
             reply = construct_reply(submission.selftext, submission.id)
             if reply:
                 try:
@@ -84,7 +84,7 @@ def construct_reply(string, id):
     # We need to remove duplicate objects by their real name, not just the requested name.
     replied_item_names = []
     for index, request in enumerate(requests):
-        request = request.lower()
+        request = request.lower().strip()
         print(request + " " + id)
         requested_name = request.split('/')[0]
         # Checks if a corresponding item exists. This is an exact match for now
